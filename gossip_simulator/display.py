@@ -123,3 +123,49 @@ def print_round_header(round_num: int, total: int) -> None:
     print(f"  ROUND {round_num} of {total}")
     print(f"{'-' * 60}{RESET}")
     print()
+
+
+HR_COLOR = "\033[91m"
+
+
+def print_drift_leaderboard(report) -> None:
+    print()
+    print(f"  {BOLD}=== CULPABLE SCORE LEADERBOARD ==={RESET}")
+    print()
+
+    if not report.agent_scores:
+        print(f"  {DIM}No drift detected.{RESET}")
+        print()
+        return
+
+    max_score = report.agent_scores[0].culpable_score if report.agent_scores else 1.0
+    if max_score == 0:
+        max_score = 1.0
+
+    for i, agent in enumerate(report.agent_scores):
+        color = COLORS.get(agent.name, "")
+        bar_len = int((agent.culpable_score / max_score) * 20)
+        bar = "#" * bar_len + "." * (20 - bar_len)
+        rank = i + 1
+        print(
+            f"  {rank}. {color}{agent.name:<22}{RESET} "
+            f"[{bar}] {agent.culpable_score:.3f}  "
+            f"{DIM}({agent.hop_count} pass{'es' if agent.hop_count != 1 else ''}){RESET}"
+        )
+
+    print(f"\n  {DIM}Total drift from original: {report.total_drift:.3f}{RESET}")
+    print()
+
+
+def print_hr_report(report_text: str) -> None:
+    print()
+    print(f"  {HR_COLOR}{BOLD}{'*' * 50}")
+    print(f"  OFFICE OF HUMAN RESOURCES")
+    print(f"  CONFIDENTIAL — INTERNAL INVESTIGATION")
+    print(f"  {'*' * 50}{RESET}")
+    print()
+    for line in report_text.split("\n"):
+        print(f"  {HR_COLOR}{line}{RESET}")
+    print()
+    print(f"  {HR_COLOR}{BOLD}{'*' * 50}{RESET}")
+    print()

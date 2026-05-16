@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, List
 
 from gossip_simulator.agents import get_agent_response
-from gossip_simulator.orchestrator import pick_next_agents, merge_parallel_outputs
+from gossip_simulator.orchestrator_v2 import pick_next_agents, merge_parallel_outputs
 from gossip_simulator.display import (
     print_hop,
     print_parallel_hop,
