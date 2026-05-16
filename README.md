@@ -75,12 +75,54 @@ python3 -m gossip_simulator.main --mode v1    # v1 linear
 - In v2, multiple agents can hear the message at once, and a **merger** blends their outputs
 - Runs 3 rounds to show how the same starting message drifts differently each time
 
+## HR Investigation Mode (v2)
+
+v2 includes semantic drift analysis — it measures how much each agent distorts the message using text embeddings, then produces:
+
+- **Culpable Score Leaderboard** — ranks agents by total drift contribution
+- **HR "Name and Shame" Report** — a witty corporate memo naming the worst offender, toxic duo, or misinformation team
+- **Drift Chart** — a line graph showing similarity decay over passes (saved as PNG)
+- **Flow Diagram** — a directed graph showing message flow between agents with color-coded drift (saved as PNG)
+
+```
+=== CULPABLE SCORE LEADERBOARD ===
+
+1. The Catastrophizer      [##########..........] 0.185  (2 passes)
+2. The Exaggerator         [########............] 0.142  (1 pass)
+3. The Gossip              [######..............] 0.098  (2 passes)
+
+**************************************************
+OFFICE OF HUMAN RESOURCES
+CONFIDENTIAL — INTERNAL INVESTIGATION
+**************************************************
+
+HR ALERT: The partnership of The Catastrophizer and The Exaggerator has been
+flagged as a toxic communication dyad.
+Combined drift damage: 0.250
+Recommendation: These employees must not be assigned to the same
+floor, breakroom rotation, or Slack channel.
+
+**************************************************
+```
+
+Requires the `nomic-embed-text` embedding model:
+```bash
+ollama pull nomic-embed-text
+pip3 install numpy matplotlib graphviz
+```
+
+Disable drift analysis with `--no-drift`:
+```bash
+python3 -m gossip_simulator.main --no-drift
+```
+
 ## Prerequisites
 
 - Python 3.9+
 - [Ollama](https://ollama.com/download) running locally
 - `llama3.1` model: `ollama pull llama3.1`
 - `pip3 install ollama`
+- For drift analysis (v2): `ollama pull nomic-embed-text` and `pip3 install numpy matplotlib graphviz`
 
 ## Full Documentation
 

@@ -68,6 +68,8 @@ gossip_simulator/
   orchestrator_v2.py   - v2 routing logic (pick 1+ agents, merger)
   runner_v1.py         - v1 round loop (linear, agents used once)
   runner_v2.py         - v2 round loop (multi-pass, parallel fan-out, merge)
+  drift.py             - Semantic drift analysis, scoring, HR report templates (v2)
+  visualize.py         - Graphviz flow diagram + matplotlib drift chart (v2)
   main.py              - Entry point with --mode flag, runs N rounds
 ```
 
@@ -285,6 +287,70 @@ Agents almost always choose "pass" — silence is rare by design.
 
 ---
 
+## Semantic Drift Analysis (v2 Only)
+
+v2 includes an HR investigation mode that measures how much each agent distorts the message from the original, identifies the worst offenders, and produces a witty HR report.
+
+### How Drift is Measured
+
+After each round completes, the drift module:
+1. Converts the original message into an embedding vector using `nomic-embed-text` (via Ollama)
+2. Converts each hop's output message into an embedding
+3. Calculates **cosine similarity** between each output and the original (1.0 = identical, 0.0 = completely different)
+4. The **drift delta** per hop = previous similarity - current similarity (how much that hop moved away from the original)
+
+### Culpable Score
+
+Each agent's culpable score is the **sum** of all their drift deltas across every pass they participated in during a round.
+
+- **Single pass**: the full drift delta is attributed to the agent
+- **Parallel fan-out**: the drift delta from the merged output is split equally among participating agents
+
+An agent who causes small damage repeatedly accumulates a higher score than one who causes a single large spike. This measures total organizational damage.
+
+### Worst Offender Categories
+
+After scoring, the system identifies three categories:
+
+| Category | Criteria | HR Report Style |
+|----------|----------|-----------------|
+| **Worst single agent** | Highest individual culpable score | Probation notice, disciplinary review |
+| **Toxic duo** | Pair in consecutive or parallel passes with highest combined drift | Mandatory separation protocol |
+| **Misinformation team** | 3+ agents in a parallel fan-out with the largest single drift spike | Staggered lunch breaks, communications watch |
+
+The HR report picks whichever category caused the most damage and produces a randomly selected corporate memo template.
+
+### Visualizations
+
+Two PNG files are generated per round:
+
+- **`gossip_flow_round_N.png`** — Graphviz directed graph showing message flow. Nodes are agent passes, edges show drift scores, color-coded green (low drift) to red (high drift). Parallel fan-outs display as branching/converging paths.
+- **`drift_chart_round_N.png`** — Matplotlib line chart. X-axis = pass number, Y-axis = cosine similarity to original (starts at 1.0, decays). Each point is labeled with the agent name.
+
+### Dependencies
+
+```bash
+ollama pull nomic-embed-text    # embedding model
+pip3 install numpy matplotlib graphviz
+```
+
+System graphviz is also required for flow diagrams:
+- macOS: `brew install graphviz`
+- Ubuntu: `sudo apt install graphviz`
+
+### Disabling Drift Analysis
+
+```bash
+python3 -m gossip_simulator.main --no-drift
+```
+
+### Files
+
+- `gossip_simulator/drift.py` — embedding calls, cosine similarity, scoring, HR report templates
+- `gossip_simulator/visualize.py` — graphviz flow diagram, matplotlib drift chart
+
+---
+
 ## Configuration
 
 Constants you can change in the source files:
@@ -298,6 +364,7 @@ Constants you can change in the source files:
 | `AGENT_TEMPERATURE` | agents.py | 0.8 | Creativity for persona agents |
 | `ORCHESTRATOR_TEMPERATURE` | orchestrator_v1.py / orchestrator_v2.py | 0.3 | Creativity for routing decisions |
 | `MERGER_TEMPERATURE` | orchestrator_v2.py | 0.7 | Creativity for merging parallel outputs (v2 only) |
+| `EMBED_MODEL` | drift.py | "nomic-embed-text" | Ollama embedding model for drift analysis |
 
 ---
 
@@ -321,3 +388,10 @@ Constants you can change in the source files:
 
 **"ModuleNotFoundError: No module named 'ollama'"**
 - Install the package: `pip3 install ollama`
+
+**Drift analysis says "nomic-embed-text not available"**
+- Pull the embedding model: `ollama pull nomic-embed-text`
+
+**Flow diagram fails to render**
+- Install system graphviz: `brew install graphviz` (macOS) or `sudo apt install graphviz` (Ubuntu)
+- Also install the Python package: `pip3 install graphviz`
